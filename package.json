@@ -2,6 +2,9 @@
   "name": "ts-serverless-openapi",
   "version": "1.0.0",
   "description": "TypeScript + OpenAPI + Serverless project template",
+  "engines": {
+    "node": "18"
+  },
   "scripts": {
     "test": "tsoa spec-and-routes && jest --silent",
     "test:verbose": "tsoa spec-and-routes && jest",
