@@ -1,9 +1,16 @@
 import { v4 } from "uuid";
 import { request } from "../helpers/app";
-import { CreateTableCommand, DeleteTableCommand, DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { createProductsTable, getProduct, deleteProductsTable } from "../helpers/productsTable";
 
 describe("Products", () => {
   describe("POST /product", () => {
+    beforeEach = async () => {
+      await createProductsTable();
+    };
+    afterEach = async () => {
+      await deleteProductsTable();
+    };
+
     it("responds with 201 status code and newly created product data if product has been created successfully", async () => {
       const requestBody = {
         product: {
@@ -30,19 +37,6 @@ describe("Products", () => {
     });
 
     it("stores product in database", async () => {
-      const client = new DynamoDBClient({ endpoint: "http://localhost:8000" });
-
-      await client.send(new DeleteTableCommand({ TableName: "Products" }));
-
-      await client.send(
-        new CreateTableCommand({
-          TableName: "Products",
-          AttributeDefinitions: [{ AttributeName: "ProductID", AttributeType: "S" }],
-          KeySchema: [{ AttributeName: "ProductID", KeyType: "HASH" }],
-          ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
-        }),
-      );
-
       const product = {
         name: `product-name-${v4()}`,
         description: `product-description-${v4()}`,
@@ -56,12 +50,7 @@ describe("Products", () => {
       const response = await request.post("/product").send(requestBody);
       const expectedProduct = response.body.product;
 
-      const output = await client.send(
-        new GetItemCommand({
-          TableName: "Products",
-          Key: { ProductID: { S: expectedProduct.id } },
-        }),
-      );
+      const output = await getProduct(expectedProduct.id);
 
       expect(output.Item).not.toBeUndefined();
       const item = output.Item!;
