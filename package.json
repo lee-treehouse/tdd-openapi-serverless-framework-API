@@ -6,10 +6,11 @@
     "node": "18"
   },
   "scripts": {
-    "test": "tsoa spec-and-routes && jest --silent",
-    "test:verbose": "tsoa spec-and-routes && jest",
-    "test:watch": "concurrently \"jest --silent --watchAll\" \"nodemon -x tsoa spec-and-routes\"",
-    "test:watch:verbose": "concurrently \"jest --watchAll\" \"nodemon -x tsoa spec-and-routes\"",
+    "docker": "docker compose up -d dynamodb-local-products",
+    "test": "npm run docker && tsoa spec-and-routes && jest --silent",
+    "test:verbose": "npm run docker && tsoa spec-and-routes && jest",
+    "test:watch": "npm run docker && concurrently \"jest --silent --watchAll\" \"nodemon -x tsoa spec-and-routes\"",
+    "test:watch:verbose": "npm run docker && concurrently \"jest --watchAll\" \"nodemon -x tsoa spec-and-routes\"",
     "deploy": "serverless deploy",
     "dev": "concurrently \"nodemon\" \"nodemon -x tsoa spec-and-routes\"",
     "build": "tsoa spec-and-routes && tsc",

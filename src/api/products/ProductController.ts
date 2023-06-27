@@ -2,6 +2,7 @@ import { Body, Controller, Post, Route, SuccessResponse } from "tsoa";
 
 import { provideSingleton } from "../../util/provideSingleton";
 import { v4 } from "uuid";
+import { CreateTableCommand, DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 
 export interface Product {
   id: string;
@@ -27,6 +28,22 @@ export class ProductController extends Controller {
   @SuccessResponse(201)
   @Post()
   public async postProduct(@Body() reqBody: ProductRequestBody): Promise<ProductResponseBody> {
-    return Promise.resolve({ product: { ...reqBody.product, id: v4(), createdAt: new Date() } });
+    const product = { ...reqBody.product, id: v4(), createdAt: new Date() };
+
+    const client = new DynamoDBClient({ endpoint: "http://localhost:8000" });
+    await client.send(
+      new PutItemCommand({
+        TableName: "Products",
+        Item: {
+          ProductID: { S: product.id },
+          Name: { S: product.name },
+          Description: { S: product.description },
+          Price: { N: String(product.price) },
+          CreatedAt: { N: product.createdAt.getTime().toString() },
+        },
+      }),
+    );
+
+    return Promise.resolve({ product });
   }
 }

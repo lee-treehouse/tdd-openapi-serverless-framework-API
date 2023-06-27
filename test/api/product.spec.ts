@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 import { request } from "../helpers/app";
-import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { CreateTableCommand, DeleteTableCommand, DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
 
 describe("Products", () => {
   describe("POST /product", () => {
@@ -30,6 +30,19 @@ describe("Products", () => {
     });
 
     it("stores product in database", async () => {
+      const client = new DynamoDBClient({ endpoint: "http://localhost:8000" });
+
+      await client.send(new DeleteTableCommand({ TableName: "Products" }));
+
+      await client.send(
+        new CreateTableCommand({
+          TableName: "Products",
+          AttributeDefinitions: [{ AttributeName: "ProductID", AttributeType: "S" }],
+          KeySchema: [{ AttributeName: "ProductID", KeyType: "HASH" }],
+          ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 },
+        }),
+      );
+
       const product = {
         name: `product-name-${v4()}`,
         description: `product-description-${v4()}`,
@@ -43,7 +56,6 @@ describe("Products", () => {
       const response = await request.post("/product").send(requestBody);
       const expectedProduct = response.body.product;
 
-      const client = new DynamoDBClient({});
       const output = await client.send(
         new GetItemCommand({
           TableName: "Products",
@@ -57,7 +69,7 @@ describe("Products", () => {
       expect(item["Name"].S).toEqual(expectedProduct.name);
       expect(item["Description"].S).toEqual(expectedProduct.description);
       expect(item["Price"].N).toEqual(String(expectedProduct.price));
-      expect(item["CreatedAt"].N).toEqual(String(expectedProduct.createdAt));
+      expect(item["CreatedAt"].N).toEqual(new Date(expectedProduct.createdAt).getTime().toString());
     });
   });
 });
